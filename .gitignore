@@ -1,0 +1,19 @@
+# Archivos y directorios específicos de Python
+
+# Directorios de caché y compilación
+__pycache__/
+*.pyc
+*.pyd
+*.so
+
+# Entorno virtual
+venv/
+.venv/
+/flightassistant/venv/
+/flightassistant/.venv/
+
+# Archivos de la base de datos (si son generados/locales)
+*.db
+
+# Archivos de configuración de entorno
+.env
