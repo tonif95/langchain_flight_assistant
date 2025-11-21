@@ -31,7 +31,7 @@ warnings.filterwarnings(
 # Nota: Asegúrate de que el archivo flightassistant_tools.py existe en el mismo directorio
 # y tiene la función ryanair_flight_search correctamente definida.
 try:
-    from flightassistant_tools import ryanair_flight_search
+    from flightassistant_tools import ryanair_flight_search, send_email
 except ImportError:
     print("⚠️ ADVERTENCIA: No se encontró 'flightassistant_tools'. Usando herramienta mock para pruebas.")
     # Mock para que el código funcione si no tienes el archivo a mano
@@ -75,7 +75,7 @@ class FlightAssistant:
     async def setup(self):
         """Inicializa los modelos y construye el grafo."""
         # 1. Definir herramientas
-        self.tools = [ryanair_flight_search]
+        self.tools = [ryanair_flight_search, send_email]
 
         # 2. Configurar el modelo del Worker (el que hace el trabajo)
         worker_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
@@ -95,7 +95,7 @@ class FlightAssistant:
         Nodo Worker: Genera respuestas o llamadas a herramientas.
         """
         # Instrucciones del sistema dinámicas
-        system_message_content = f"""You are a helpful assistant equipped with web tools and FLIGHT search tools.
+        system_message_content = f"""You are a helpful assistant equipped with web tools and FLIGHT search tools, and EMAIL tools.
             You keep working on a task until either you have a question or clarification for the user, or the success criteria is met.
             The current date is {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}.
             
@@ -105,7 +105,14 @@ class FlightAssistant:
             RULES FOR FLIGHT SEARCH:
             1. If the user asks for flights, use the 'ryanair_flight_search' tool.
             2. You MUST convert city names to IATA codes yourself (e.g., Madrid -> MAD).
-            3. Format dates strictly as YYYY-MM-DD.
+            3. OFFER EMAIL: After presenting the results, YOU MUST ASK the user: "Do you want me to email you this summary?".
+            4. SEND EMAIL: 
+               - If the user says YES: Ask for their email address (if you don't know it yet).
+               - Once you have the email, use 'send_email' tool to send the summary.
+               - Subject should be descriptive (e.g., "Flight Summary: MAD to LON").
+            
+            
+            Format dates strictly as YYYY-MM-DD.
         """
         
         # Si hubo feedback negativo anterior, lo añadimos al prompt
@@ -283,7 +290,7 @@ async def main():
                 if not user_input.strip():
                     continue
 
-                print("⏳ Pensando y buscando vuelos...")
+                print("⏳ Procesando...")
                 
                 # Ejecutamos el agente
                 respuesta = await flightassist.run_superstep(user_input)
